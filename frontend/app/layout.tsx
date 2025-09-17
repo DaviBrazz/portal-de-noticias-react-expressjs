@@ -20,16 +20,13 @@ export default function RootLayout({
 }) {
   const navItems = [
     { label: "Início", href: "/" },
-    { label: "Política", href: "/politica" },
-    { label: "Economia", href: "/economia" },
-    { label: "Tecnologia", href: "/tecnologia" },
-    { label: "Esportes", href: "/esportes" },
+    { label: "Criar notícia", href: "/criar-noticia" },
   ];
 
   return (
     <html lang="pt-BR" className="dark">
       <body className={inter.className}>
-        <div className="min-h-screen">
+        <div className="min-h-screen ">
           <NewsNavigation items={navItems} />
           {children}
           <footer className="border-t mt-12">

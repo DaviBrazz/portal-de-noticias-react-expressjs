@@ -1,13 +1,13 @@
 let userConfig = undefined
 try {
-  // try to import ESM first
-  userConfig = await import('./v0-user-next.config.mjs')
+  // tenta importar ESM primeiro
+  userConfig = await import("./v0-user-next.config.mjs")
 } catch (e) {
   try {
-    // fallback to CJS import
-    userConfig = await import("./v0-user-next.config");
+    // fallback para CJS
+    userConfig = await import("./v0-user-next.config")
   } catch (innerError) {
-    // ignore error
+    // ignora erro
   }
 }
 
@@ -27,17 +27,18 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  i18n: {
+    locales: ["pt-BR"],
+    defaultLocale: "pt-BR",
+  },
 }
 
 if (userConfig) {
-  // ESM imports will have a "default" property
+  // ESM imports terão "default"
   const config = userConfig.default || userConfig
 
   for (const key in config) {
-    if (
-      typeof nextConfig[key] === 'object' &&
-      !Array.isArray(nextConfig[key])
-    ) {
+    if (typeof nextConfig[key] === "object" && !Array.isArray(nextConfig[key])) {
       nextConfig[key] = {
         ...nextConfig[key],
         ...config[key],

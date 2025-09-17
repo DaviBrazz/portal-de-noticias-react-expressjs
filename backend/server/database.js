@@ -57,6 +57,13 @@ async function editarNoticia(id, title, description, image) {
     return result.affectedRows > 0;
 }
 
+async function deletarNoticia(id) {
+    return new Promise((resolve, reject) => {
+        db.run('DELETE FROM noticias WHERE id = ?', [id], function(err) {
+            if (err) return reject(err);
+            resolve(this.changes > 0); 
+        });
+    });
+}
 
-
-module.exports = { criarNoticia, listarNoticias, editarNoticia };
+module.exports = { criarNoticia, listarNoticias, editarNoticia, deletarNoticia };
