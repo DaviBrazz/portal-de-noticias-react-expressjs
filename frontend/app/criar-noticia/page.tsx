@@ -16,7 +16,7 @@ export default function CriarNoticiaPage() {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://192.168.1.29:5400/api/noticia/cadastrar", {
+      const response = await fetch("http://localhost:5400/api/noticia/cadastrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

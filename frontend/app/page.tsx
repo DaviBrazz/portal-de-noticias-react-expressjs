@@ -24,7 +24,7 @@ export default function NewsPage() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await axios.get("http://192.168.1.29:5400/api/noticias/listar");
+        const response = await axios.get("http://localhost:5400/api/noticias/listar");
         const formattedArticles: Article[] = response.data.map((article: any) => ({
           id: article.id,
           title: article.title,
