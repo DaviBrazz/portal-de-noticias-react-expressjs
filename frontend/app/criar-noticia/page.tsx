@@ -1,4 +1,5 @@
 "use client";
+import { API_NOTICIAS } from "@/configs";
 import { useState } from "react";
 
 export default function CriarNoticiaPage() {
@@ -16,7 +17,7 @@ export default function CriarNoticiaPage() {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:5400/api/noticia/cadastrar", {
+      const response = await fetch(`${API_NOTICIAS}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

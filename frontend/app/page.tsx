@@ -5,6 +5,7 @@ import { FeaturedNews } from "@/components/featured-news";
 import { NewsHeader } from "@/components/news-header";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_NOTICIAS } from "@/configs";
 
 interface Article {
   id: number;
@@ -24,7 +25,7 @@ export default function NewsPage() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await axios.get("http://localhost:5400/api/noticias/listar");
+        const response = await axios.get(`${API_NOTICIAS}`);
         const formattedArticles: Article[] = response.data.map((article: any) => ({
           id: article.id,
           title: article.title,
