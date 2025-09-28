@@ -1,0 +1,31 @@
+@baseUrl = http://localhost:5400/noticias
+
+### BUSCAR TODAS AS NOTÍCIAS
+GET {{baseUrl}}
+
+### BUSCAR NOTÍCIA POR ID
+GET {{baseUrl}}/9
+
+
+### CADASTRAR NOVA NOTÍCIA
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+    "title": "Título da Notícia",
+    "description": "Descrição da notícia aqui",
+    "image": "https://link-da-imagem.com/imagem.jpg"
+}
+
+### ATUALIZAR NOTÍCIA
+PUT {{baseUrl}}/1
+Content-Type: application/json
+
+{
+    "title": "Título Atualizado",
+    "description": "Descrição atualizada",
+    "image": "https://link-da-imagem.com/nova-imagem.jpg"
+}
+
+### DELETAR NOTÍCIA
+DELETE {{baseUrl}}/1

@@ -1,17 +1,20 @@
-const express = require('express');
 const path = require('path');
+const dotenv = require("dotenv")
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+const express = require('express');
 const cors = require('cors'); 
 const database = require('./database');
 
 const app = express();
-const port = 5400;
+const PORTA = process.env.PORTA || 5400;
+const IP_SERVER = process.env.IP_SERVER;
 
 app.use(cors()); 
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-app.post('/api/noticia/cadastrar', async (req, res) => {
+app.post('/noticias', async (req, res) => {
     const { title, description, image } = req.body;
     const date = new Date().toISOString();  
 
@@ -31,12 +34,29 @@ app.post('/api/noticia/cadastrar', async (req, res) => {
     }
 });
 
-app.get('/api/noticias/listar', async (req, res) => {
+app.get('/noticias', async (req, res) => {
     const noticias = await database.listarNoticias();
     res.json(noticias);
 });
 
-app.put('/api/noticia/editar/:id', async (req, res) => {
+app.get('/noticias/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const noticia = await database.buscarNoticiaPorId(id); 
+
+        if (noticia) {
+            res.json(noticia);
+        } else {
+            res.status(404).json({ message: 'Notícia não encontrada.' });
+        }
+    } catch (error) {
+        console.error('Erro ao buscar notícia:', error);
+        res.status(500).json({ message: 'Ocorreu um erro ao tentar buscar a notícia.' });
+    }
+});
+
+app.put('/noticias/:id', async (req, res) => {
     const { id } = req.params;  
     const { title, description, image } = req.body; 
 
@@ -49,7 +69,7 @@ app.put('/api/noticia/editar/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/noticia/deletar/:id', async (req, res) => {
+app.delete('/noticias/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -67,6 +87,6 @@ app.delete('/api/noticia/deletar/:id', async (req, res) => {
 });
 
 
-app.listen(port, () => {
-    console.log(`Servidor rodando em http://localhost:${port}`);
+app.listen(PORTA, () => {
+    console.log(`Servidor rodando em ${IP_SERVER}:${PORTA}`);
 });

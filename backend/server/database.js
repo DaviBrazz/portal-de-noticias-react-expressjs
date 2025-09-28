@@ -1,19 +1,18 @@
 const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('./db.sqlite');
 
-// Criar tabela de notícias (caso não exista)
+
 db.serialize(() => {
     db.run(`
         CREATE TABLE IF NOT EXISTS noticias (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT,
             description TEXT,
-            image TEXT,         -- Novo campo para URL da image
+            image TEXT,
             date TEXT
         )
     `);
 });
-
 
 function criarNoticia(title, description, image, dataCriacao) {
     return new Promise((resolve, reject) => {
@@ -27,7 +26,6 @@ function criarNoticia(title, description, image, dataCriacao) {
         );
     });
 }
-
 
 async function listarNoticias() {
     try {
@@ -48,13 +46,18 @@ async function listarNoticias() {
     }
 }
 
-
 async function editarNoticia(id, title, description, image) {
-    const result = await db.run(
-        'UPDATE noticias SET title = ?, description = ?, image = ? WHERE id = ?',
-        [title, description, image, id]
-    );
-    return result.affectedRows > 0;
+    const result = await new Promise((resolve, reject) => {
+        db.run(
+            'UPDATE noticias SET title = ?, description = ?, image = ? WHERE id = ?',
+            [title, description, image, id],
+            function(err) {
+                if (err) return reject(err);
+                resolve(this.changes > 0);
+            }
+        );
+    });
+    return result;
 }
 
 async function deletarNoticia(id) {
@@ -66,4 +69,19 @@ async function deletarNoticia(id) {
     });
 }
 
-module.exports = { criarNoticia, listarNoticias, editarNoticia, deletarNoticia };
+function buscarNoticiaPorId(id) {
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM noticias WHERE id = ?', [id], (err, row) => {
+            if (err) return reject(err);
+            resolve(row); 
+        });
+    });
+}
+
+module.exports = {
+    criarNoticia,
+    listarNoticias,
+    editarNoticia,
+    deletarNoticia,
+    buscarNoticiaPorId 
+};
