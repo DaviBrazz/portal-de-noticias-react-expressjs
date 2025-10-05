@@ -1,92 +1,117 @@
-const path = require('path');
-const dotenv = require("dotenv")
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const express = require('express');
-const cors = require('cors'); 
+const cors = require('cors');
+const multer = require('multer');
 const database = require('./database');
 
 const app = express();
-const PORTA = process.env.PORTA || 5400;
-const IP_SERVER = process.env.IP_SERVER;
+const PORTA = 5400;
+const IP_SERVER = "http://localhost";
 
-app.use(cors()); 
-
+app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.urlencoded({ extended: true }));
 
-app.post('/noticias', async (req, res) => {
-    const { title, description, image } = req.body;
-    const date = new Date().toISOString();  
-
-    if (!title || !description || !image) {
-        return res.status(400).json({ message: 'Todos os campos são obrigatórios (title, description, image).' });
-    }
-
-    try {
-        const result = await database.criarNoticia(title, description, image, date);
-        return res.status(201).json({
-            message: 'Notícia cadastrada com sucesso!',
-            ID: res.id
-        });
-    } catch (error) {
-        console.error('Erro ao cadastrar notícia:', error);
-        return res.status(500).json({ message: 'Ocorreu um erro ao tentar cadastrar a notícia.' });
-    }
+// Multer em memória para upload
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) return cb(new Error("Apenas imagens são permitidas"));
+    cb(null, true);
+  }
 });
 
+// Criar notícia
+app.post('/noticias', upload.single('image'), async (req, res) => {
+  const { title, description } = req.body;
+  const file = req.file;
+  const date = new Date().toISOString();
+
+  if (!title || !description || !file) {
+    return res.status(400).json({ message: "Título, descrição e imagem são obrigatórios" });
+  }
+
+  try {
+    const result = await database.criarNoticia(title, description, file.buffer, date);
+    res.status(201).json({ message: "Notícia criada com sucesso", id: result.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao criar notícia" });
+  }
+});
+
+// Listar notícias (sem BLOB)
 app.get('/noticias', async (req, res) => {
+  try {
     const noticias = await database.listarNoticias();
-    res.json(noticias);
+    const noticiasComUrl = noticias.map(n => ({
+      ...n,
+      image: `${IP_SERVER}:${PORTA}/noticias/imagem/${n.id}`
+    }));
+    res.json(noticiasComUrl);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao listar notícias" });
+  }
 });
 
-app.get('/noticias/:id', async (req, res) => {
-    const { id } = req.params;
+// Servir imagem via URL
+app.get('/noticias/imagem/:id', async (req, res) => {
+  try {
+    const noticia = await database.buscarNoticiaPorId(req.params.id);
+    if (!noticia || !noticia.image) return res.status(404).send("Imagem não encontrada");
 
-    try {
-        const noticia = await database.buscarNoticiaPorId(id); 
-
-        if (noticia) {
-            res.json(noticia);
-        } else {
-            res.status(404).json({ message: 'Notícia não encontrada.' });
-        }
-    } catch (error) {
-        console.error('Erro ao buscar notícia:', error);
-        res.status(500).json({ message: 'Ocorreu um erro ao tentar buscar a notícia.' });
-    }
+    res.writeHead(200, {
+      "Content-Type": "image/jpeg",
+      "Content-Length": noticia.image.length
+    });
+    res.end(noticia.image);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erro ao carregar imagem");
+  }
 });
 
-app.put('/noticias/:id', async (req, res) => {
-    const { id } = req.params;  
-    const { title, description, image } = req.body; 
+// Atualizar notícia parcialmente (PATCH)
+app.patch('/noticias/:id', upload.single('image'), async (req, res) => {
+  const { id } = req.params;
+  const { title, description } = req.body;
+  const file = req.file;
 
-    const result = await database.editarNoticia(id, title, description, image);
+  try {
+    const noticia = await database.buscarNoticiaPorId(id);
+    if (!noticia) return res.status(404).json({ message: "Notícia não encontrada" });
 
-    if (result) {
-        res.json({ message: 'Notícia atualizada com sucesso!' });
-    } else {
-        res.status(404).json({ message: 'Notícia não encontrada!' });
-    }
+    // Atualiza apenas os campos fornecidos
+    const novoTitle = title || noticia.title;
+    const novaDescription = description || noticia.description;
+    const novaImage = file ? file.buffer : noticia.image;
+
+    await database.editarNoticia(id, novoTitle, novaDescription, novaImage);
+
+    res.json({ message: "Notícia atualizada com sucesso" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao atualizar notícia" });
+  }
 });
 
+// Deletar notícia
 app.delete('/noticias/:id', async (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    try {
-        const result = await database.deletarNoticia(id);
+  try {
+    const result = await database.deletarNoticia(id);
+    if (!result) return res.status(404).json({ message: "Notícia não encontrada" });
 
-        if (result) {
-            return res.json({ message: 'Notícia deletada com sucesso!' });
-        } else {
-            return res.status(404).json({ message: 'Notícia não encontrada.' });
-        }
-    } catch (error) {
-        console.error('Erro ao deletar notícia:', error);
-        return res.status(500).json({ message: 'Ocorreu um erro ao tentar deletar a notícia.' });
-    }
+    res.json({ message: "Notícia deletada com sucesso" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao deletar notícia" });
+  }
 });
-
 
 app.listen(PORTA, () => {
-    console.log(`Servidor rodando em ${IP_SERVER}:${PORTA}`);
+  console.log(`Servidor rodando em ${IP_SERVER}:${PORTA}`);
 });
